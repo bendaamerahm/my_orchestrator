@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 # List all <deployment-name>_<deployment-id>_<timestamp>.json container files located in /tmp/strivly/containers
 # and create container using docker run ... command-line
 # delete all containers that not listed in that location
