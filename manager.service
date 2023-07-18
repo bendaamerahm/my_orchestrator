@@ -1,0 +1,11 @@
+[Unit]
+Description=Strivly Manager Controller
+After=network.target docker.service
+
+[Service]
+Type=simple
+ExecStart=/tmp/strivly/manager.sh
+Restart=always
+
+[Install]
+WantedBy=default.target

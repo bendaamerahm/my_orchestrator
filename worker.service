@@ -1,0 +1,10 @@
+[Unit]
+Description=Strivly Worker Controller
+After=network.target docker.service
+
+[Service]
+ExecStart=/tmp/strivly/worker.sh
+Restart=always
+
+[Install]
+WantedBy=default.target
