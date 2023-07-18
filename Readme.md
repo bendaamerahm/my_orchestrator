@@ -47,5 +47,3 @@ vagrant up
 ```
 sudo ./cli.sh deployment:create --name app --image nginx --replicas 3
 ```
-
-After completing these steps, you can organize the instructions as a readme.md script with the appropriate formatting and explanations.
