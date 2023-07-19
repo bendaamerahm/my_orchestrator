@@ -1,6 +1,6 @@
 [Unit]
 Description=Strivly Worker Controller
-After=network.target docker.service
+After=network.target
 
 [Service]
 ExecStart=/tmp/strivly/worker.sh

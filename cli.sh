@@ -3,31 +3,32 @@
 set -euo pipefail
 
 command=$1
-API="http://localhost:8000"
 
 if [[ -z "${1:-}" ]]; then
   echo "Error: Missing command."
   exit 1
 fi
 
-create_deployment() {
-    local name="$1"
-    local image="$2"
-    local replicas="$3"
+DEPLOYMENTS_DIR="/tmp/strivly/deployments/"
 
-    # request the api server to create the deployment
-    response=$(curl -s -X POST -H "Content-Type: application/json" \
-        -d "{\"name\":\"$name\",\"image\":$image,\"replicas\":\"$replicas\"}" \
-        "$API/deployments")
-    
-    # response
-    echo "response: $response"
+create_deployment() {
+    name="$1"
+    image="$2"
+    replicas="$3"
+
+    timestamp=$(date +%s)
+    uuid=$(uuid)
+    mkdir -p "$DEPLOYMENTS_DIR""${uuid}"
+    json_content='{"timestamp": "'"$timestamp"'", "id": "'"$uuid"'","name": "'"$name"'","image": "'"$image"'","replicas": "'"$replicas"'"}'
+
+    echo "$json_content" > "$DEPLOYMENTS_DIR""${uuid}"/config.json
+    echo "Your deployment creation request with Name: $name and ID: $uuid has been acknowledged!"
 }
 
 is_unique() {
     local name="$1"
 
-    find /tmp/strivly/deployments -name 'config.json' -type f | while IFS= read -r filepath; do
+    find "$DEPLOYMENTS_DIR" -name 'config.json' -type f | while IFS= read -r filepath; do
         json_content=$(cat "$filepath")
 
         if [[ "$(echo "$json_content" | jq -r '.name')" == "$name" ]]; then

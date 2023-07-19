@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 # List all deployment config.json files
 # and generate multiple JSON files in this format <deployment-name>_<deployment-id>_<timestamp>.json for each container
 # based on the `replicas` number, JSON files are located in /tmp/strivly/containers directory
@@ -27,43 +25,40 @@ while true; do
         image=$(jq -r '.image' <<< "$json")
         replicas=$(jq -r '.replicas' <<< "$json")
 
-        declare -A total_replicas
-        for path in "${CONTAINERS_DIR[@]}"; do
-            deployment_uuid=$(jq -r '.parent' "$path")
-            total_replicas[$deployment_uuid]=$(( ${total_replicas[$deployment_uuid]} + 1 ))
-        done
-        
-        for deployment_uuid in "${!total_replicas[@]}"; do
-            actual_replicas=${total_replicas[$deployment_uuid]}
-
-            if (( actual_replicas < replicas )); then
-                replicas_to_add=$(( replicas - actual_replicas ))
-                for (( i=0; i<replicas_to_add; i++ )); do
-                    timestamp=$(date +%s)
-                    uuid=$(uuid)
-                    file_name="${deployment_uuid}_${uuid}_${timestamp}.json"
-                    file_path="$CONTAINERS_DIR/$file_name"
-                    content='{"parent": "'"$id_deployment"'", "id": "'"$uuid"'", "timestamp": "'"$timestamp"'", "name": "'"$name"'","image": "'"$image"'"}'
-                    echo "$content" > "$file_path"
-                done
-
-            elif (( actual_replicas > replicas )); then
-                replicas_to_remove=$(( actual_replicas - replicas ))
-                excess=()
-                configs=$(find "$DEPLOYMENTS_DIR" -name "config.json")
-                for config in "${configs[@]}"; do
-                    file_deployment_uuid=$(jq -r '.parent' "$config")
-                    if [[ $file_deployment_uuid == "$deployment_uuid" ]]; then
-                        excess+=("$config")
-                    fi
-                done
-                excess=("${excess[@]:0:$replicas_to_remove}")
-                for path in "${excess[@]}"; do
-                    rm "$path"
-                done
+        total_replicas=0
+        for container_file in "$CONTAINERS_DIR"/*.json; do
+            container_id_parent=$(jq -r '.parent' "$container_file")
+            if [[ "$container_id_parent" == "$id_deployment" ]]; then
+                ((total_replicas++))
             fi
-
         done
+
+        if ((total_replicas < replicas)); then
+            replicas_to_add=$((replicas - total_replicas))
+            for ((i=0; i<replicas_to_add; i++)); do
+                timestamp=$(date +%s)
+                uuid=$(uuid)
+                file_name="${id_deployment}_${uuid}_${timestamp}.json"
+                file_path="$CONTAINERS_DIR/$file_name"
+                content='{"parent": "'"$id_deployment"'", "id": "'"$uuid"'", "timestamp": "'"$timestamp"'", "name": "'"$name"'", "image": "'"$image"'"}'
+                echo "$content" > "$file_path"
+            done
+        elif ((total_replicas > replicas)); then
+            replicas_to_remove=$((total_replicas - replicas))
+            excess=()
+            for container_file in "$CONTAINERS_DIR"/*.json; do
+                container_id_parent=$(jq -r '.parent' "$container_file")
+                if [[ "$container_id_parent" == "$id_deployment" ]]; then
+                    excess+=("$container_file")
+                fi
+                if (( ${#excess[@]} >= replicas_to_remove )); then
+                    break
+                fi
+            done
+            for path in "${excess[@]:0:$replicas_to_remove}"; do
+                rm "$path"
+            done
+        fi
     done
     sleep 1
 done
