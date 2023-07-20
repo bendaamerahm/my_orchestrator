@@ -33,7 +33,7 @@ sudo systemctl start manager
 sudo systemctl start worker
 ```
 
-7. Create a deployment named "app" with an Nginx image and 3 replicas using the CLI script:
+7. Create a deployment named "app" with an Nginx image and 2 replicas using the CLI script:
 ```
 sudo ./cli.sh deployment:create --name app --image nginx --replicas 2
 ```
