@@ -5,11 +5,6 @@
 git clone https://github.com/bendaamerahm/my_orchestrator.git
 ```
 
-2. Change to the project directory:
-```
-cd my_orchestrator
-```
-
 3. Create a directory named "strivly" in the /tmp directory and copy the project files into it:
 ```
 cd /tmp && mkdir strivly

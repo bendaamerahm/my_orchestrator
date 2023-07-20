@@ -4,13 +4,13 @@
 # and generate multiple JSON files in this format <deployment-name>_<deployment-id>_<timestamp>.json for each container
 # based on the `replicas` number, JSON files are located in /tmp/strivly/containers directory
 # in this format
-#{
+# {
 #    "parent": "<deployment-uuid>",
 #   "id": "<uuid>",
 #    "timestamp": "<timestamp>",
 #    "name": "<deployment-name>_<deployment-id>_<timestamp>",
 #    "image": "<image>"
-#}
+# ²}
 # Override (Refresh) each time all JSON files in /tmp/strivly/containers to deal with orphelin/missing/excess containers
 # in order to match the desired state (deployment objects)
 
@@ -38,7 +38,7 @@ while true; do
             for ((i=0; i<replicas_to_add; i++)); do
                 timestamp=$(date +%s)
                 uuid=$(uuid)
-                file_name="${id_deployment}_${uuid}_${timestamp}.json"
+                file_name="${name}_${id_deployment}_${timestamp}.json"
                 file_path="$CONTAINERS_DIR/$file_name"
                 content='{"parent": "'"$id_deployment"'", "id": "'"$uuid"'", "timestamp": "'"$timestamp"'", "name": "'"$name"'", "image": "'"$image"'"}'
                 echo "$content" > "$file_path"

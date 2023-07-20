@@ -17,21 +17,22 @@ while true; do
         #if [[ $file =~ $pattern ]]; then
             echo "step 2 into if"
             data=$(cat "$filepath")
+            id=$(jq -r '.id' <<< "$data")
             timestamp=$(jq -r '.timestamp' <<< "$data")
             name=$(jq -r '.name' <<< "$data")
             image=$(jq -r '.image' <<< "$data")
-
-            exist=$(docker ps -aq --filter "name=$name$" --filter "label=timestamp=$timestamp")
+            echo "parent ${id}"
+            exist=$(docker ps -aq --filter "name=$id" --filter "label=timestamp=$timestamp")
             echo "step 2 show json ${data}"
             if [[ -z $exist ]]; then
                 echo "step 3 not exist ${exist}"
-                docker run -d --name "$name" --label "timestamp=$timestamp" "$image"
+                docker run -d --name "$id" --label "timestamp=$timestamp" "$image"
             else
                 echo "step 3 exist ${exist}"
                 docker restart "$exist"
             fi
 
-            container_list+=("$name")
+            container_list+=("$id")
             echo "step 4 container_list ${container_list[*]}"
         #fi
     done
@@ -46,7 +47,7 @@ while true; do
             fi
         done
 
-        if [[ $container_found == false ]]; then
+        if [[ $container_found == true ]]; then
             docker stop "$container"
             docker rm "$container"
         fi
