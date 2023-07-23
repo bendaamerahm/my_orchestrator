@@ -24,6 +24,7 @@ while true; do
         name=$(jq -r '.name' <<< "$json")
         image=$(jq -r '.image' <<< "$json")
         replicas=$(jq -r '.replicas' <<< "$json")
+        label=$(jq -r '.label' <<< "$json")
 
         total_replicas=0
         for container_file in "$CONTAINERS_DIR"/*.json; do
@@ -40,7 +41,7 @@ while true; do
                 uuid=$(uuid)
                 file_name="${name}_${id_deployment}_${timestamp}.json"
                 file_path="$CONTAINERS_DIR/$file_name"
-                content='{"parent": "'"$id_deployment"'", "id": "'"$uuid"'", "timestamp": "'"$timestamp"'", "name": "'"$name"'", "image": "'"$image"'"}'
+                content='{"parent": "'"$id_deployment"'", "id": "'"$uuid"'", "timestamp": "'"$timestamp"'", "name": "'"$name"'", "image": "'"$image"'", "label": "'"$label"'"}'
                 echo "$content" > "$file_path"
             done
         elif ((total_replicas > replicas)); then

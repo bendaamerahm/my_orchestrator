@@ -1,0 +1,10 @@
+[Unit]
+Description=Strivly Service Controller
+After=network.target
+
+[Service]
+ExecStart=/tmp/strivly/service.sh
+Restart=always
+
+[Install]
+WantedBy=default.target
