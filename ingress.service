@@ -1,0 +1,10 @@
+[Unit]
+Description=Strivly ingress Controller
+After=network.target
+
+[Service]
+ExecStart=/tmp/strivly/ingress.sh
+Restart=always
+
+[Install]
+WantedBy=default.target

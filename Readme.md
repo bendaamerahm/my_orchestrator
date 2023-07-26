@@ -25,7 +25,14 @@ sudo cli deployment:create --name test --image nginx --replicas 2 --label role=w
 ```
 sudo cli service:create --name testService --selector role=web
 ```
-5. test
+
+5. create ingress example
+
+```
+sudo cli ingress:create --name myIngress --host kubecity.co --backends "/path1=service1,/path2=service1,/path3=service2"
+```
+
+6. test
 
 ```
 curl -s "http://localhost:80"  
