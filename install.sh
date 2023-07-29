@@ -11,6 +11,7 @@ systemctl stop manager
 systemctl stop worker
 systemctl stop service
 systemctl stop ingress
+systemctl stop scaler
 docker container prune --force
 sudo docker image prune --force
 
@@ -38,6 +39,7 @@ chmod +x cli.sh
 chmod +x worker.sh
 chmod +x service.sh
 chmod +x ingress.sh
+chmod +x scaler.sh
 
 # copy the services files into systemd dir
 echo "copy the services files into systemd dir"
@@ -45,6 +47,7 @@ cp ./manager.service /etc/systemd/system
 cp ./worker.service /etc/systemd/system
 cp ./service.service /etc/systemd/system
 cp ./ingress.service /etc/systemd/system
+cp ./scaler.service /etc/systemd/system
 
 # enable and start services
 echo "enable and start services"
@@ -52,10 +55,12 @@ systemctl enable manager
 systemctl enable worker
 systemctl enable service
 systemctl enable ingress
+systemctl enable scaler
 systemctl start manager
 systemctl start worker
 systemctl start service
 systemctl start ingress
+systemctl start scaler
 
 # cli.sh as command
 echo "add cli.sh as command"

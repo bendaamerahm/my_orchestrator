@@ -28,7 +28,7 @@ while true; do
             echo "step 2 show json ${data}"
             if [[ -z $exist ]]; then
                 echo "step 3 not exist ${exist}"
-                docker run -d --name "$id" --label "$label" "$image"
+                docker run -d --name "$id" --label "$label" --memory "20m" --memory-swap="20m" "$image"
             else
                 echo "step 3 exist ${exist}"
                 #docker restart "$exist"
@@ -57,7 +57,7 @@ while true; do
         #fi
     done
 
-    all_containers=$(docker ps -aq --filter "label=$current_label" --format "{{.Names}}")
+    all_containers=$(docker ps --filter "label=$current_label" --format "{{.Names}}")
     for container in $all_containers; do
         container_found=false
         for existing_container in "${container_list[@]}"; do
@@ -67,7 +67,7 @@ while true; do
             fi
         done
 
-        if [[ $container_found == true ]]; then
+        if [[ $container_found == false ]]; then
             docker stop "$container"
             docker rm "$container"
         fi

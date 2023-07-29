@@ -28,6 +28,19 @@ create_deployment() {
     echo "Your deployment creation request with Name: $name and ID: $uuid has been acknowledged!"
 }
 
+scale_deployment() {
+    name="$1"
+    replicas="$2"
+
+    find "$DEPLOYMENTS_DIR" -type f -name 'config.json' | while IFS= read -r filepath; do
+        if jq --arg name "$name" '.name == $name' "$filepath" >/dev/null 2>&1; then
+            jq --argjson replicas "$replicas" 'if has("replicas") then .replicas = $replicas else . + { "replicas": $replicas } end' "$filepath" > tmpfile && mv tmpfile "$filepath"
+        fi
+    done
+
+    echo "Your deployment scaling request with Name: $name and Replicas: $replicas has been acknowledged!"
+}
+
 create_service() {
     name="$1"
     selector="$2"
@@ -83,6 +96,17 @@ check_uniqueness() {
     local resource_type="$3"
 
     if find "$dir" -name 'config.json' -type f -exec jq -e --arg name "$name" '.name == $name' {} \; | grep -q true; then
+        echo "$name $resource_type is not unique: try another name!"
+        exit 1
+    fi
+}
+
+is_deployment_exist() {
+    local name="$1"
+
+    if find "$DEPLOYMENTS_DIR" -name 'config.json' -type f -exec jq -e --arg name "$name" '.name == $name' {} \; | grep -q true; then
+        return 0
+    else
         echo "$name $resource_type is not unique: try another name!"
         exit 1
     fi
@@ -160,7 +184,7 @@ case "$command" in
         name=""
         image=""
         replicas=1
-        image=""
+        label=""
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 --name)
@@ -190,6 +214,33 @@ case "$command" in
         fi
 
         create_deployment "$name" "$image" "$replicas" "$label"
+        ;;
+    
+    deployment:scale)
+        name=""
+        image=""
+        replicas=1
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --name)
+                    shift
+                    name="$1"
+                    is_deployment_exist "$name"
+                    ;;
+                --replicas)
+                    shift
+                    replicas="$1"
+                    ;;
+            esac
+            shift
+        done
+
+        if [[ -z "$name" || -z "$replicas" ]]; then
+            echo "Error: Missing required options for 'deployment:scale' command."
+            exit 1
+        fi
+
+        scale_deployment "$name" "$replicas"
         ;;
 
     service:create)
