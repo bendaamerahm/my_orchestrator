@@ -18,7 +18,7 @@ sudo docker image prune --force
 # create directories
 echo "Creating Working dir /tmp/strivly ..."
 mkdir /tmp/strivly
-mkdir /tmp/strivly/containers
+mkdir /tmp/strivly/pods
 mkdir /tmp/strivly/deployments
 mkdir /tmp/strivly/services
 mkdir /tmp/strivly/ingresses

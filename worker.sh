@@ -4,11 +4,11 @@
 # and create container using docker run ... command-line
 # delete all containers that not listed in that location
 
-CONTAINERS_DIR="/tmp/strivly/containers"
+PODS_DIR="/tmp/strivly/pods"
 pattern="^.+_[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}_\d{10}\.json$"
 
 while true; do
-    files=("$CONTAINERS_DIR"/*)
+    files=("$PODS_DIR"/*)
     container_list=()
     current_label=""
     echo "files"
@@ -18,42 +18,39 @@ while true; do
         #if [[ $file =~ $pattern ]]; then
             echo "step 2 into if"
             data=$(cat "$filepath")
-            parent=$(jq -r '.parent' <<< "$data")
-            id=$(jq -r '.id' <<< "$data")
             label=$(jq -r '.label' <<< "$data")
-            image=$(jq -r '.image' <<< "$data")
-            echo "parent ${parent}"
-            echo "label: ${label}"
-            exist=$(docker ps -aq --filter "name=$id" --filter "label=$label")
-            echo "step 2 show json ${data}"
-            if [[ -z $exist ]]; then
-                echo "step 3 not exist ${exist}"
-                docker run -d --name "$id" --label "$label" --memory "20m" --memory-swap="20m" "$image"
-            else
-                echo "step 3 exist ${exist}"
-                #docker restart "$exist"
+            parent=$(jq -r '.parent' <<< "$data")
+            containers=$(jq -r '.containers' <<< "$data")
+            echo "label: $label"
+            echo "containers: $containers"
+
+            # pause container for current deployment
+            pause_container="pause_$parent"
+            echo "pause_container: $pause_container"
+            exist_pause_container=$(docker ps -a --filter "name=$pause_container" --format "{{.Names}}")
+            if [[ -z $exist_pause_container ]]; then
+                docker run -d --name "$pause_container" --label "$label" --network "none" registry.k8s.io/pause:3.6
             fi
 
-            docker exec -i "$id" sh -c "cat <<EOF > /usr/share/nginx/html/index.html
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Strivly</title>
-                </head>
-                <body>
-                    <h1>Welcome to Strivly Container $id</h1>
-                    <h3>About Us</h3>
-                    <p>At Strivly, we are a dedicated team of Kubernetes experts with a passion for delivering exceptional container orchestration solutions. Our mission is to empower businesses of all sizes to embrace the power of Kubernetes, streamlining their operations, and accelerating their digital transformation journey.
-
-                        With years of hands-on experience, we have developed a deep understanding of the complexities and nuances of Kubernetes. This expertise enables us to design, implement, and manage Kubernetes solutions that meet the unique needs of each client, driving efficiency and scalability in their applications and infrastructure.
-                    </p>
-                    <h4>deployment parent: $parent</h4>
-                </body>
-                </html>
-                "
-            current_label="$label"
-            container_list+=("$id")
-            echo "step 4 container_list ${container_list[*]}"
+            for container in $(jq -c '.[]' <<< "$containers"); do
+                # name and image
+                container_name=$(jq -r '.name' <<< "$container")
+                container_image=$(jq -r '.image' <<< "$container")
+                echo "name: $container_name, image: $container_image"
+                exist=$(docker ps -a --filter "label=$label" --filter "name=$container_name" --format "{{.Names}}")
+                echo "exist $exist"
+                if [[ -z $exist ]]; then
+                    echo "not exist"
+                    ghost_image="ghost"
+                    if [[ "$container_image" == "$ghost_image" ]]; then
+                        docker run -d --name "$container_name" -e "NODE_ENV=development" --label "$label" --network "container:$pause_container" --memory "500m" --memory-swap="500m" "$container_image"
+                    else
+                        docker run -d --name "$container_name" --label "$label" --network "container:$pause_container" --memory "20m" --memory-swap="20m" "$container_image"
+                    fi
+                fi
+                current_label="$label"
+                container_list+=("$container_name")
+            done
         #fi
     done
 

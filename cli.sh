@@ -15,18 +15,27 @@ INGRESSES_DIR="/tmp/strivly/ingresses"
 
 create_deployment() {
     name="$1"
-    image="$2"
+    containers="$2"
     replicas="$3"
     label="$4"
 
     timestamp=$(date +%s)
-    uuid=$(uuid)
+    uuid=$(uuid) 
     mkdir -p "$DEPLOYMENTS_DIR"/"${uuid}"
-    json_content='{"timestamp": "'"$timestamp"'", "id": "'"$uuid"'","name": "'"$name"'","image": "'"$image"'","replicas": "'"$replicas"'","label": "'"$label"'"}'
 
-    echo "$json_content" > "$DEPLOYMENTS_DIR"/"${uuid}"/config.json
+    cat <<EOF >"$DEPLOYMENTS_DIR"/"${uuid}"/config.json
+    {
+        "timestamp": "$timestamp",
+        "id": "$uuid",
+        "name": "$name",
+        "containers": $containers,
+        "replicas": "$replicas",
+        "label": "$label"
+    }
+EOF
     echo "Your deployment creation request with Name: $name and ID: $uuid has been acknowledged!"
 }
+
 
 scale_deployment() {
     name="$1"
@@ -139,6 +148,18 @@ is_valid_selector() {
     fi
 }
 
+validate_container_schema() {
+    local containers="$1"
+    result=$(echo "$containers" | jq 'if . == null then false elif .[] | .name == null or .image == null then false else true end')
+    echo "result: $result"
+    if [ "$result" == "true" ]; then
+        echo "Schema is correct"
+    else
+        echo "Schema is incorrect"
+        exit 1
+    fi
+}
+
 is_valid_host() {
     local host="$1"
     local domain_pattern='^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
@@ -182,19 +203,15 @@ validate_and_check_services() {
 case "$command" in
     deployment:create)
         name=""
-        image=""
         replicas=1
         label=""
+        containers=""
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 --name)
                     shift
                     name="$1"
                     is_unique_deployment "$name"
-                    ;;
-                --image)
-                    shift
-                    image="$1"
                     ;;
                 --replicas)
                     shift
@@ -204,21 +221,26 @@ case "$command" in
                     shift
                     label="$1"
                     ;;
+                --containers)
+                    shift
+                    containers="$*"
+                    echo "containers: $containers"
+                    #validate_container_schema "$containers"
+                    ;;
             esac
             shift
         done
 
-        if [[ -z "$name" || -z "$image" || -z "$replicas" || -z "$label" ]]; then
+        if [[ -z "$name" || -z "$containers" || -z "$replicas" || -z "$label" ]]; then
             echo "Error: Missing required options for 'deployment:create' command."
             exit 1
         fi
 
-        create_deployment "$name" "$image" "$replicas" "$label"
+        create_deployment "$name" "$containers" "$replicas" "$label"
         ;;
     
     deployment:scale)
         name=""
-        image=""
         replicas=1
         while [[ $# -gt 0 ]]; do
             case "$1" in
